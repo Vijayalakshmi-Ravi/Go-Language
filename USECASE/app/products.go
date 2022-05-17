@@ -82,7 +82,7 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 			ErrorMessage:  err.Error(),
 			StatusCode:    200,
 			Status:        false,
-			CustomMessage: "Invalid call",
+			CustomMessage: "Invalid ProductID",
 		}
 
 		json.NewEncoder(w).Encode(msg)
@@ -162,6 +162,44 @@ func GetAllProduct(w http.ResponseWriter, r *http.Request) {
 		}
 		results = append(results, elem)
 	}
-	cur.Close(context.TODO())
-	json.NewEncoder(w).Encode(results)
+	if results == nil {
+		msg := ResponseError{
+			ErrorMessage:  "nill",
+			StatusCode:    200,
+			Status:        false,
+			CustomMessage: "Empty Collection",
+		}
+		json.NewEncoder(w).Encode(msg)
+	} else {
+		cur.Close(context.TODO())
+		res := Response{
+			StatusCode:    200,
+			Status:        true,
+			CustomMessage: "Success",
+		}
+		json.NewEncoder(w).Encode(res)
+		json.NewEncoder(w).Encode(results)
+	}
+}
+
+func SearchProduct(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var result Product
+	query := r.URL.Query()
+	filters, present := query["filters"]
+	if !present || len(filters) == 0 {
+		fmt.Println("filters not present")
+	}
+	fmt.Println(filters)
+	for i, _ := range filters {
+		s, _ := strconv.Atoi(filters[i])
+		fmt.Println(s)
+		err := productCollection.FindOne(context.TODO(), bson.M{"details.categoryid": s}).Decode(&result)
+		if err == nil {
+			json.NewEncoder(w).Encode(result)
+		} else {
+			//err1 := subCategoryCollection.FindOne(context.TODO(), bson.M{"subcategoryid": s}).Decode(&result)
+		}
+	}
+	json.NewEncoder(w).Encode(filters)
 }

@@ -104,7 +104,7 @@ func GetBrand(w http.ResponseWriter, r *http.Request) {
 			ErrorMessage:  err.Error(),
 			StatusCode:    200,
 			Status:        false,
-			CustomMessage: "Invalid call",
+			CustomMessage: "Invalid BrandID",
 		}
 
 		json.NewEncoder(w).Encode(msg)
@@ -126,6 +126,8 @@ func UpdateBrand(w http.ResponseWriter, r *http.Request) {
 
 	type updateBody struct {
 		BrandID       int    `json:"brandid"`
+		CategoryID    int    `json:"categoryid" bson:"categoryid"`
+		SubCategoryID int    `json:"subcategoryid" bson:"subcategoryid"`
 		BrandName     string `json:"brandname"`
 		Description   string `json:"description"`
 		Status        string `json:"status"`
@@ -142,12 +144,50 @@ func UpdateBrand(w http.ResponseWriter, r *http.Request) {
 	returnOpt := options.FindOneAndUpdateOptions{
 		ReturnDocument: &after,
 	}
-	update := bson.D{{"$set", bson.D{{"brandname", body.BrandName}, {"description", body.Description}, {"status", body.Status}, {"lastupdatedby", body.LastUpdatedBy}}}}
-	updateResult := brandCollection.FindOneAndUpdate(context.TODO(), filter, update, &returnOpt)
+	update := bson.D{{"$set", bson.D{{"categoryid", body.CategoryID}, {"subcategoryid", body.SubCategoryID}, {"brandname", body.BrandName}, {"description", body.Description}, {"status", body.Status}, {"lastupdatedby", body.LastUpdatedBy}}}}
+	var record primitive.M
+	errs := categoryCollection.FindOne(context.TODO(), bson.D{{"categoryid", body.CategoryID}, {"status", "InActive"}}).Decode(&record)
+	if errs != nil {
+		err1 := subCategoryCollection.FindOne(context.TODO(), bson.D{{"subcategoryid", body.SubCategoryID}, {"status", "InActive"}}).Decode(&record)
+		if err1 != nil {
+			updateResult := brandCollection.FindOneAndUpdate(context.TODO(), filter, update, &returnOpt)
+			var result primitive.M
+			_ = updateResult.Decode(&result)
+			if result != nil {
+				res := Response{
+					StatusCode:    200,
+					Status:        true,
+					CustomMessage: "Updated Successfully",
+				}
+				json.NewEncoder(w).Encode(res)
+			} else {
+				msg := ResponseError{
+					ErrorMessage:  "nil",
+					StatusCode:    200,
+					Status:        false,
+					CustomMessage: "Update BrandID does not Exists",
+				}
+				json.NewEncoder(w).Encode(msg)
+			}
+		} else {
+			msg := ResponseError{
+				ErrorMessage:  "nil",
+				StatusCode:    200,
+				Status:        false,
+				CustomMessage: "Updating SubCategoryID no longer available",
+			}
+			json.NewEncoder(w).Encode(msg)
+		}
+	} else {
+		msg := ResponseError{
+			ErrorMessage:  "nil",
+			StatusCode:    200,
+			Status:        false,
+			CustomMessage: "Updating CategoryID no longer available",
+		}
+		json.NewEncoder(w).Encode(msg)
+	}
 
-	var result primitive.M
-	_ = updateResult.Decode(&result)
-	json.NewEncoder(w).Encode(result)
 }
 
 func DeleteBrand(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +220,22 @@ func GetAllBrand(w http.ResponseWriter, r *http.Request) {
 		}
 		results = append(results, elem)
 	}
-	cur.Close(context.TODO())
-	json.NewEncoder(w).Encode(results)
+	if results == nil {
+		msg := ResponseError{
+			ErrorMessage:  "nill",
+			StatusCode:    200,
+			Status:        false,
+			CustomMessage: "Empty Collection",
+		}
+		json.NewEncoder(w).Encode(msg)
+	} else {
+		cur.Close(context.TODO())
+		res := Response{
+			StatusCode:    200,
+			Status:        true,
+			CustomMessage: "Success",
+		}
+		json.NewEncoder(w).Encode(res)
+		json.NewEncoder(w).Encode(results)
+	}
 }

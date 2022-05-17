@@ -76,7 +76,7 @@ func GetVariant(w http.ResponseWriter, r *http.Request) {
 			ErrorMessage:  err.Error(),
 			StatusCode:    200,
 			Status:        false,
-			CustomMessage: "Invalid call",
+			CustomMessage: "Invalid VariantID",
 		}
 
 		json.NewEncoder(w).Encode(msg)
@@ -157,6 +157,22 @@ func GetAllVariant(w http.ResponseWriter, r *http.Request) {
 		}
 		results = append(results, elem)
 	}
-	cur.Close(context.TODO())
-	json.NewEncoder(w).Encode(results)
+	if results == nil {
+		msg := ResponseError{
+			ErrorMessage:  "nill",
+			StatusCode:    200,
+			Status:        false,
+			CustomMessage: "Empty Collection",
+		}
+		json.NewEncoder(w).Encode(msg)
+	} else {
+		cur.Close(context.TODO())
+		res := Response{
+			StatusCode:    200,
+			Status:        true,
+			CustomMessage: "Success",
+		}
+		json.NewEncoder(w).Encode(res)
+		json.NewEncoder(w).Encode(results)
+	}
 }

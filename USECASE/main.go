@@ -48,6 +48,7 @@ func main() {
 	s.HandleFunc("/getProduct/{productid}", app.GetProduct).Methods("GET")
 	s.HandleFunc("/updateProduct", app.UpdateProduct).Methods("PUT")
 	s.HandleFunc("/deleteProduct/{id}", app.DeleteProduct).Methods("DELETE")
+	s.HandleFunc("/searchProduct", app.SearchProduct).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8000", s)) // Run Server
 }
